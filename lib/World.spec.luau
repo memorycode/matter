@@ -218,6 +218,7 @@ return function()
 
 			local withoutCount = 0
 			for _id, _player in world:query(Player):without(Poison) do
+				print(_id, _player)
 				withoutCount += 1
 			end
 

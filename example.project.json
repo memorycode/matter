@@ -11,10 +11,6 @@
         "$path": "example/assets/level.rbxm"
       }
     },
-    "Lighting": {
-      "$className": "Lighting",
-      "$path": "example/assets/lighting.rbxm"
-    },
     "ServerScriptService": {
       "$className": "ServerScriptService",
       "Game": {
@@ -23,7 +19,6 @@
     },
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
-
       "Assets": {
         "$path": "example/assets/assets.rbxm"
       },
