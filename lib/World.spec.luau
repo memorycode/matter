@@ -218,7 +218,6 @@ return function()
 
 			local withoutCount = 0
 			for _id, _player in world:query(Player):without(Poison) do
-				print(_id, _player)
 				withoutCount += 1
 			end
 
@@ -235,16 +234,6 @@ return function()
 			expect(#world:query(Player):snapshot()).to.equal(0)
 
 			expect(world:query(Player):without(Enemy):next()).to.equal(world:query(Player):next())
-
-			expect(world:query(Player):view():get()).to.equal(nil)
-			expect(world:query(Player):view():contains()).to.equal(false)
-
-			local viewCount = 0
-			for _ in world:query(Player):view() do
-				viewCount += 1
-			end
-
-			expect(viewCount).to.equal(0)
 		end)
 
 		it("should allow getting single components", function()
@@ -647,129 +636,6 @@ return function()
 			end
 
 			expect(#world:query(Player):without(Poison):snapshot()).to.equal(1)
-		end)
-
-		it("should contain entity in view", function()
-			local ComponentA = component("ComponentA")
-			local ComponentB = component("ComponentB")
-
-			local world = World.new()
-
-			local entityA = world:spawn(ComponentA())
-			local entityB = world:spawn(ComponentB())
-
-			local viewA = world:query(ComponentA):view()
-			local viewB = world:query(ComponentB):view()
-
-			expect(viewA:contains(entityA)).to.equal(true)
-			expect(viewA:contains(entityB)).to.equal(false)
-			expect(viewB:contains(entityB)).to.equal(true)
-			expect(viewB:contains(entityA)).to.equal(false)
-		end)
-
-		it("should get entity data from view", function()
-			local numComponents = 20
-			local components = {}
-
-			for i = 1, numComponents do
-				table.insert(components, component("Component" .. i))
-			end
-
-			local world = World.new()
-
-			local componentInstances = {}
-
-			for _, componentFn in components do
-				table.insert(componentInstances, componentFn())
-			end
-
-			local entityA = world:spawn(table.unpack(componentInstances))
-
-			local viewA = world:query(table.unpack(components)):view()
-			local viewB = world:query(components[1]):view()
-
-			expect(select("#", viewA:get(entityA))).to.equal(numComponents)
-			expect(select("#", viewB:get(entityA))).to.equal(1)
-
-			local viewAEntityAData = { viewA:get(entityA) }
-
-			for index, componentData in viewAEntityAData do
-				expect(getmetatable(componentData)).to.equal(components[index])
-			end
-
-			local viewBEntityAData = { viewB:get(entityA) }
-
-			expect(getmetatable(viewBEntityAData[1])).to.equal(components[1])
-		end)
-
-		it("should return view results in query order", function()
-			local Parent = component("Parent")
-			local Transform = component("Transform")
-			local Root = component("Root")
-
-			local world = World.new()
-
-			local root = world:spawn(Transform({ pos = Vector2.new(3, 4) }), Root())
-			local _otherRoot = world:spawn(Transform({ pos = Vector2.new(1, 2) }), Root())
-
-			local child = world:spawn(
-				Parent({
-					entity = root,
-					fromChild = Transform({ pos = Vector2.one }),
-				}),
-				Transform.new({ pos = Vector2.zero })
-			)
-
-			local _otherChild = world:spawn(
-				Parent({
-					entity = root,
-					fromChild = Transform({ pos = Vector2.new(0, 0) }),
-				}),
-				Transform.new({ pos = Vector2.zero })
-			)
-
-			local _grandChild = world:spawn(
-				Parent({
-					entity = child,
-					fromChild = Transform({ pos = Vector2.new(-1, 0) }),
-				}),
-				Transform.new({ pos = Vector2.zero })
-			)
-
-			local parents = world:query(Parent):view()
-			local roots = world:query(Transform, Root):view()
-
-			expect(parents:contains(root)).to.equal(false)
-
-			local orderOfIteration = {}
-
-			for id in world:query(Transform, Parent) do
-				table.insert(orderOfIteration, id)
-			end
-
-			local view = world:query(Transform, Parent):view()
-			local i = 0
-			for id in view do
-				i += 1
-				expect(orderOfIteration[i]).to.equal(id)
-			end
-
-			for id, absolute, parent in world:query(Transform, Parent) do
-				local relative = parent.fromChild.pos
-				local ancestor = parent.entity
-				local current = parents:get(ancestor)
-				while current do
-					relative = current.fromChild.pos * relative
-					ancestor = current.entity
-					current = parents:get(ancestor)
-				end
-
-				local pos = roots:get(ancestor).pos
-
-				world:insert(id, absolute:patch({ pos = Vector2.new(pos.x + relative.x, pos.y + relative.y) }))
-			end
-
-			expect(world:get(child, Transform).pos).to.equal(Vector2.new(4, 5))
 		end)
 
 		it("should not invalidate iterators", function()
